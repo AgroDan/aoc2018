@@ -12,8 +12,8 @@
 #
 # Credit where it is due, the concept of this script was inspired heavily by 0xdf's version.
 
-set AOC_DIR "/home/dan/Documents/aoc2024"
-set AOC_URL_BASE "https://adventofcode.com/2024/day"
+set AOC_DIR "/home/dan/Documents/aoc2018"
+set AOC_URL_BASE "https://adventofcode.com/2018/day"
 
 # AOC Session is not set
 if test -z "$AOC_SESSION"

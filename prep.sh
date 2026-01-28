@@ -13,7 +13,7 @@
 # Credit where it is due, the concept of this script was inspired heavily by 0xdf's version.
 
 AOC_DIR=$(pwd)
-AOC_URL_BASE="https://adventofcode.com/2024/day"
+AOC_URL_BASE="https://adventofcode.com/2018/day"
 
 if [ ! -d ${AOC_DIR}/.git ]
 then

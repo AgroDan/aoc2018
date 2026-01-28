@@ -11,7 +11,7 @@
 
 # Set base directory and URL
 $AOC_DIR = Get-Location
-$AOC_URL_BASE = "https://adventofcode.com/2024/day"
+$AOC_URL_BASE = "https://adventofcode.com/2018/day"
 
 # Check if the directory is a Git repository
 if (-Not (Test-Path "$AOC_DIR\.git")) {
