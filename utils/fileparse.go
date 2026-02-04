@@ -19,7 +19,12 @@ func GetTextBlob(filename string) (string, error) {
 
 	// Similar to day 13, this takes a whole challenge blob and passes
 	// it unadulterated to the parser
-	return string(readFile), nil
+
+	// This is necessary for my future sanity
+	out := string(readFile)
+
+	// TO HELL WITH OFF-BY-ONE ERRORS
+	return strings.TrimSpace(out), nil
 }
 
 func GetFileLines(filename string) ([]string, error) {
