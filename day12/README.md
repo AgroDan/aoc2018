@@ -1,0 +1,15 @@
+# Day 12: Subterranean Sustainability
+
+This challenge gives me PTSD almost. THANK GOD I knew how to deal with this properly, because the last time I did something like this [I damn near lost my mind](https://github.com/AgroDan/aoc2022/tree/main/day17). This was another one that I got lost int he details with, poking away at what the initial challenge actually wanted me to do. The weirdness that got me doubting my abilities was the fact that _I was supposed to pad the state for every iteration_. This was because the plants could propogate into the negatives which would ultimately be necessary for the final calculation. I just padded once and was done with it. That was incorrect, and I started to be able to replicate the results of the sample data without an issue.
+
+I did, notably, figure that this can and _will_ balloon in size if part two was to, say, give me a ridiculous number of iterations/generations I'm supposed to iterate against. Imagine my shock and surprise when I was given the task of calculating what it would be like after `50,000,000,000` iterations.
+
+I knew exactly what I had to do: Look for patterns. This is almost exactly the challenge for Day 17 of AoC 2022. Well, maybe not exactly as that had to deal with tetris(tm) like pieces falling in a specific pattern, but the premise was simple. Here's a set of pre-defined conditions that have to be calculated on an iterative basis, now tell me what the state will be after some astronomical number of iterations. Letting it run and calculate per iteration will take an unreasonable amount of time, so you have a find a shortcut.
+
+What's the shortcut? _Patterns_.
+
+Now I just needed to find a pattern from the data. This took a fair bit of work as I had to actually determine what pattern I should look for. At first, I just truncated the padding I added and saved the remaining plant configuration as a string, saved that to a map and checked for repetition. I noticed that the plants actually started to level off around the `134`th iteration. But the pattern repeated indefinitely. That seemed strange, and apparently this was not the answer.
+
+Looking further I realized that while the _plant formation_ didn't change, they all _shifted_ to the right on each iteration. So the score would always be different regardless. The question now is what is the pattern to look for then? It has to be in the _difference_ between scores. If a pattern repeats indefinitely but constantly increments, it should always increment at a predictable level. So based on that, I calculated the diff when the pattern started to stabilize, determined _when_ the pattern began to stabilize, subtracted that from `50,000,000,000`, then multiplied the difference by the remainder and added it to the score at the beginning of the pattern stabilization.
+
+Solved this one a lot faster than the one in 2022, but still fun knowing that I knew how to accomplish this already! Finished in `5.1136ms`.
