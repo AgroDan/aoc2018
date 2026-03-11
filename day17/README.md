@@ -136,4 +136,10 @@ Eventually I just ran it until there were no more "flowing water" coordinates ab
 
 Mercifully, Part 2 was just asking to count the `~` characters only. That was an easy addition. I had to re-do this a couple of times before I finally got it right, but them's the breaks I guess. I'll leave in my failed previous spaghetti'd attempts as `.bad` files for you to peruse as penance for my crap code.
 
+To boil it all down, for every single tick, perform the following movements for each falling water point:
+
+1. **Can I fall?** - unit below is `.` character. Move down and set waterfall character to `water.Y += 1`. Otherwise...
+2. **Can I spread?** - unit below is a `#` character (wall) or `~` character (settled water). Run `bfsSpread()` to check for downfall points to add more falling water point. Otherwise...
+3. **Am I contained?** - If we're contained in a place with no downfalls, fill the container by one layer and set the "falling water" point to above the original point, ie `water.Y -= 1`.
+
 This was a chugger, finished both parts after `1m, 27.7610696s`. Took only a few seconds longer if I printed out the map, so I removed that just to cut down on computation time.
