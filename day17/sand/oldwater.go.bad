@@ -1,0 +1,198 @@
+package sand
+
+import "github.com/AgroDan/aocutils"
+
+const (
+	DOWN = iota
+	UP   // probably not necessary but eff it
+	RIGHT
+	LEFT
+)
+
+// type WaterFall struct {
+// 	stream []aocutils.Coord
+// 	ended  bool
+// }
+
+// the above may not be necessary...I'll try a basic flood fill recursive
+// function that will take a seed and just call itself until it hits the
+// highest max Y value.
+
+// func (c *ClayMap) OldFloodFill(seed aocutils.Coord) {
+// 	// Water always flows down...change to ~ if we are contained.
+// 	if seed.X < c.MinX || seed.X > c.MaxX || seed.Y < c.MinY || seed.Y > c.MaxY {
+// 		return
+// 	}
+
+// 	seedStart, _ := c.Get(seed)
+// 	if seedStart == '#' || seedStart == '~' || seedStart == '|' {
+// 		return
+// 	}
+
+// 	c.Set(seed, '|')
+// 	// peek down, if we can go down, do it. If we can't, then peek left and right. If we can go left or right, do it.
+// 	peekDown, _ := c.Get(seed.Peek(aocutils.S))
+// 	if peekDown == '#' || peekDown == '~' {
+// 		if c.isContained(seed) {
+// 			c.leftFill(seed)
+// 			c.rightFill(seed)
+// 			return
+// 		}
+// 		c.FloodFill(seed.Peek(aocutils.W))
+// 		c.FloodFill(seed.Peek(aocutils.E))
+// 	} else {
+// 		c.FloodFill(seed.Peek(aocutils.S))
+// 	}
+
+// 	// now peek again because it may have filled before
+// 	peekDownAgain, _ := c.Get(seed.Peek(aocutils.S))
+// 	if peekDownAgain == '~' {
+// 		if c.isContained(seed) {
+// 			c.leftFill(seed)
+// 			c.rightFill(seed)
+// 			return
+// 		}
+// 		c.FloodFill(seed.Peek(aocutils.W))
+// 		c.FloodFill(seed.Peek(aocutils.E))
+// 	}
+// }
+
+// func (c *ClayMap) oldandbustedFloodFill(seed aocutils.Coord, dir int) {
+// 	// if the seed is out of bounds, return
+// 	if seed.X < c.MinX || seed.X > c.MaxX || seed.Y < c.MinY || seed.Y > c.MaxY {
+// 		return
+// 	}
+
+// 	// if the seed is clay or water, return
+// 	seedStart, _ := c.Get(seed)
+// 	if seedStart == '#' || seedStart == '~' {
+// 		return
+// 	}
+
+// 	// otherwise, set the seed to water and call flood fill on the four
+// 	// adjacent coordinates.
+// 	switch dir {
+// 	case DOWN:
+// 		c.Set(seed, '|')
+// 		// c.FloodFill(aocutils.Coord{X: seed.X, Y: seed.Y + 1}, DOWN)
+// 	case LEFT:
+// 		c.Set(seed, '~')
+// 		// c.FloodFill(aocutils.Coord{X: seed.X - 1, Y: seed.Y}, LEFT)
+// 	case RIGHT:
+// 		c.Set(seed, '~')
+// 		// c.FloodFill(aocutils.Coord{X: seed.X + 1, Y: seed.Y}, RIGHT)
+// 	case UP:
+// 		c.Set(seed, '~')
+// 		// c.FloodFill(aocutils.Coord{X: seed.X, Y: seed.Y - 1}, UP)
+// 	}
+
+// 	// c.FloodFill(aocutils.Coord{X: seed.X, Y: seed.Y + 1}, DOWN)
+// 	// c.FloodFill(aocutils.Coord{X: seed.X - 1, Y: seed.Y}, LEFT)
+// 	// c.FloodFill(aocutils.Coord{X: seed.X + 1, Y: seed.Y}, RIGHT)
+// 	// c.FloodFill(aocutils.Coord{X: seed.X, Y: seed.Y - 1}, UP)
+
+// 	// Better way: Peek down, check the result, then decide which way
+// 	// to go. If a wall is below you, go left and right. If water is below
+// 	// you, go left and right. If empty space is below you, go down.
+// 	peekDown, _ := c.Get(seed.Peek(aocutils.S))
+// 	if peekDown == '#' || peekDown == '~' {
+// 		c.FloodFill(seed.Peek(aocutils.W), LEFT)
+// 		c.FloodFill(seed.Peek(aocutils.E), RIGHT)
+// 	} else {
+// 		c.FloodFill(seed.Peek(aocutils.S), DOWN)
+// 	}
+
+// 	// now because it may have filled up again, check again if
+// 	// there is a wall or water below you. If there is, then you can
+// 	// go up and try to fill that way.
+// 	peekDownAgain, _ := c.Get(seed.Peek(aocutils.S))
+// 	if peekDownAgain == '~' {
+// 		c.FloodFill(seed.Peek(aocutils.W), LEFT)
+// 		c.FloodFill(seed.Peek(aocutils.E), RIGHT)
+// 	}
+// 	// c.PrintOffset()
+// }
+
+func (c *ClayMap) isContained(pos aocutils.Coord) bool {
+	// This will just scan left and right (as well as down)
+	// to determine if we are contained or if we are spilling
+	// over.
+
+	// First check, are we surrounded by clay on left and right?
+	rightBlocked, leftBlocked := false, false
+	var leftWall, rightWall aocutils.Coord
+
+	// first look left
+	for x := pos.X - 1; x >= c.MinX-1; x-- {
+		thisRune, _ := c.Get(aocutils.Coord{X: x, Y: pos.Y})
+		if thisRune == '#' {
+			leftBlocked = true
+			leftWall = aocutils.Coord{X: x, Y: pos.Y}
+			break
+		}
+	}
+
+	// now right
+	for x := pos.X + 1; x <= c.MaxX+1; x++ {
+		thisRune, _ := c.Get(aocutils.Coord{X: x, Y: pos.Y})
+		if thisRune == '#' {
+			rightBlocked = true
+			rightWall = aocutils.Coord{X: x, Y: pos.Y}
+			break
+		}
+	}
+
+	// if we go off past the boundary in either direction, not contained
+	if !rightBlocked || !leftBlocked {
+		return false
+	}
+
+	// Now let's see if we're filling up a jug.
+	belowPos := pos.Peek(aocutils.S)
+	leftLayered, rightLayerd := false, false
+
+	// look below and left
+	for x := belowPos.X - 1; x >= c.MinX-1; x-- {
+		thisRune, _ := c.Get(aocutils.Coord{X: x, Y: belowPos.Y})
+		if thisRune == '.' {
+			// if we hit empty space before determining if THIS
+			// layer is contained, then we're not filling a jug.
+			return false
+		}
+
+		if thisRune == '~' {
+			continue
+		}
+
+		// if this seems clumsy it's because I was fighting with
+		// my linter for this and for some reason I need to set
+		// another variable here rather than choose the ephemeral
+		// coord object in the conditional check.
+		check := aocutils.Coord{X: x, Y: belowPos.Y - 1}
+		if thisRune == '#' && check == leftWall {
+			// we hit the edge of the jug
+			leftLayered = true
+			break
+		}
+	}
+
+	// look below and right now
+	for x := belowPos.X + 1; x <= c.MaxX+1; x++ {
+		thisRune, _ := c.Get(aocutils.Coord{X: x, Y: belowPos.Y})
+		if thisRune == '.' {
+			return false
+		}
+
+		if thisRune == '~' {
+			continue
+		}
+
+		check := aocutils.Coord{X: x, Y: belowPos.Y - 1}
+		if thisRune == '#' && check == rightWall {
+			rightLayerd = true
+			break
+		}
+	}
+
+	return leftLayered && rightLayerd
+}

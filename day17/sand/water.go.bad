@@ -1,0 +1,226 @@
+// package sand
+
+import (
+	"github.com/AgroDan/aocutils"
+)
+
+// A little different. I'll operate under the notion of "ticks", where each
+// tick the water will try to move down, then left and right if possible.
+// if it can't move, then it will be marked as ~ and not move anymore. If it
+// can move, then it will be marked as | and will continue to move until it
+// can't move anymore.
+
+func (c *ClayMap) inBounds(coord aocutils.Coord) bool {
+	return coord.X >= c.MinX && coord.X <= c.MaxX && coord.Y >= c.MinY && coord.Y <= c.MaxY
+}
+
+func (c *ClayMap) bfsSpread(seed aocutils.Coord) []aocutils.Coord {
+	// this is BFS and will be weighted only to go
+	// left and right of the point. If any drop off
+	// points are found (meaning a place for water
+	// to spill over) then those points will be
+	// returned. Otherwise a 0-length slice will
+	// be returned if contained.
+
+	queue := aocutils.NewQueue[aocutils.Coord]()
+	visited := make(map[aocutils.Coord]bool)
+	dropoffs := []aocutils.Coord{}
+
+	queue.Enqueue(seed)
+	visited[seed] = true
+
+	for !queue.IsEmpty() {
+		current, _ := queue.Dequeue()
+
+		// Check left and right
+		lr := []int{-1, 1}
+		for _, dir := range lr {
+			neighbor := aocutils.Coord{X: current.X + dir, Y: current.Y}
+
+			// simple check, if we're either out of bounds or visited
+			// previously, skip
+			if !c.inBounds(neighbor) || visited[neighbor] {
+				continue
+			}
+
+			// if we hit anything but a '.' or '|' then skip
+			neighborVal, _ := c.Get(neighbor)
+			if neighborVal != '.' && neighborVal != '|' {
+				continue
+			}
+
+			// if we can go down from this neighbor, then it's a dropoff point
+			downNeighbor := aocutils.Coord{X: neighbor.X, Y: neighbor.Y + 1}
+			downVal, _ := c.Get(downNeighbor)
+			if downVal == '.' {
+				dropoffs = append(dropoffs, neighbor)
+				continue
+			}
+			visited[neighbor] = true
+			queue.Enqueue(neighbor)
+		}
+	}
+
+	return dropoffs
+}
+
+func (c *ClayMap) leftFill(pos aocutils.Coord) {
+	// this will just automatically fill with water to the
+	// left. This should only be run if the isContained
+	// function returns true.
+	for x := pos.X; x >= c.MinX-1; x-- {
+		thisRune, _ := c.Get(aocutils.Coord{X: x, Y: pos.Y})
+		if thisRune == '#' {
+			break
+		}
+		c.Set(aocutils.Coord{X: x, Y: pos.Y}, '~')
+	}
+}
+
+func (c *ClayMap) rightFill(pos aocutils.Coord) {
+	for x := pos.X; x <= c.MaxX+1; x++ {
+		thisRune, _ := c.Get(aocutils.Coord{X: x, Y: pos.Y})
+		if thisRune == '#' {
+			break
+		}
+		c.Set(aocutils.Coord{X: x, Y: pos.Y}, '~')
+	}
+}
+
+// There are 4 possible runes to deal with:
+// . = empty
+// # = clay
+// | = water falling
+// ~ = water settled
+//
+// So for each "tick", I will ask the following in this order
+// for each "Waterfalling" point:
+// 1. Can I fall? - cell below is air, move and stay waterfalling
+// 2. Can I spread? - cell below is wall or water settled. Look for cell with air below it
+// 3. Am I contained? - use bfsspread to find if there are any places for water to fall.
+
+func (c *ClayMap) Tick(water []aocutils.Coord) []aocutils.Coord {
+	// Only keep seeds that are flowing water and can move down, are above flowing water, or can spread left/right
+	nextSeeds := []aocutils.Coord{}
+	seen := make(map[aocutils.Coord]struct{})
+
+	for i := len(water) - 1; i >= 0; i-- {
+		seed := water[i]
+		thisRune, _ := c.Get(seed)
+		if thisRune != '|' {
+			continue
+		}
+
+		peekDown, _ := c.Get(seed.Peek(aocutils.S))
+		// If we can move down, keep this seed and add the new one below
+		if peekDown == '.' {
+			c.Set(seed.Peek(aocutils.S), '|')
+			if _, ok := seen[seed.Peek(aocutils.S)]; !ok {
+				nextSeeds = append(nextSeeds, seed.Peek(aocutils.S))
+				seen[seed.Peek(aocutils.S)] = struct{}{}
+			}
+			// Keep this seed for future processing
+			if _, ok := seen[seed]; !ok {
+				nextSeeds = append(nextSeeds, seed)
+				seen[seed] = struct{}{}
+			}
+			continue
+		}
+
+		// If below is flowing water, keep this seed (could still move in future)
+		if peekDown == '|' {
+			if _, ok := seen[seed]; !ok {
+				nextSeeds = append(nextSeeds, seed)
+				seen[seed] = struct{}{}
+			}
+			continue
+		}
+
+		// If below is clay or settled water, check for spread
+		if peekDown == '#' || peekDown == '~' {
+			dropoffs := c.bfsSpread(seed)
+			if len(dropoffs) == 0 {
+				// Contained, settle
+				c.Set(seed, '~')
+				c.leftFill(seed)
+				c.rightFill(seed)
+				// Do not keep this seed. instead wake up whatever is above
+				// this row because it now has solid ground below it
+				above := seed.Peek(aocutils.N)
+				aboveVal, _ := c.Get(above)
+				if aboveVal == '|' {
+					if _, ok := seen[above]; !ok {
+						nextSeeds = append(nextSeeds, above)
+						seen[above] = struct{}{}
+					}
+				}
+				continue
+			} else {
+				// Not contained, can spread
+				for _, dropoff := range dropoffs {
+					c.Set(dropoff, '|')
+					if _, ok := seen[dropoff]; !ok {
+						nextSeeds = append(nextSeeds, dropoff)
+						seen[dropoff] = struct{}{}
+					}
+				}
+				// Fill left
+				for x := seed.X - 1; x >= c.MinX-1; x-- {
+					thisRune, _ := c.Get(aocutils.Coord{X: x, Y: seed.Y})
+					if thisRune == '#' || thisRune == '|' {
+						break
+					}
+					c.Set(aocutils.Coord{X: x, Y: seed.Y}, '|')
+					if _, ok := seen[aocutils.Coord{X: x, Y: seed.Y}]; !ok {
+						nextSeeds = append(nextSeeds, aocutils.Coord{X: x, Y: seed.Y})
+						seen[aocutils.Coord{X: x, Y: seed.Y}] = struct{}{}
+					}
+				}
+				// Fill right
+				for x := seed.X + 1; x <= c.MaxX+1; x++ {
+					thisRune, _ := c.Get(aocutils.Coord{X: x, Y: seed.Y})
+					if thisRune == '#' || thisRune == '|' {
+						break
+					}
+					c.Set(aocutils.Coord{X: x, Y: seed.Y}, '|')
+					if _, ok := seen[aocutils.Coord{X: x, Y: seed.Y}]; !ok {
+						nextSeeds = append(nextSeeds, aocutils.Coord{X: x, Y: seed.Y})
+						seen[aocutils.Coord{X: x, Y: seed.Y}] = struct{}{}
+					}
+				}
+				// Keep this seed for future processing
+				if _, ok := seen[seed]; !ok {
+					nextSeeds = append(nextSeeds, seed)
+					seen[seed] = struct{}{}
+				}
+				continue
+			}
+		}
+		// If we get here, water is blocked and cannot move or spread, do not keep this seed
+	}
+	return nextSeeds
+}
+
+func (c *ClayMap) FloodFill(seeds []aocutils.Coord) {
+	// Continue until there are no more active water positions (seeds)
+	// for len(seeds) > 0 {
+	// 	seeds = c.Tick(seeds)
+	// }
+	for i := 0; i < 7; i++ {
+		seeds = c.Tick(seeds)
+	}
+}
+
+func (c ClayMap) CountWater() int {
+	count := 0
+	// Only count water within the vertical range of clay (MinY to MaxY)
+	for y := c.MinY; y <= c.MaxY; y++ {
+		for x := c.MinX; x <= c.MaxX; x++ {
+			thisRune, _ := c.Get(aocutils.Coord{X: x, Y: y})
+			if thisRune == '~' || thisRune == '|' {
+				count++
+			}
+		}
+	}
+	return count
+}
