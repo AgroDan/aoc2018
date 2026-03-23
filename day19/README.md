@@ -120,3 +120,5 @@ seti 2 6 5, store [2] into [5], then increment IP
 ```
 
 Instead of letting it compute the whole thing and me using that `GetDivisors()` function, this runs for `47.8453ms`. I'll take it.
+
+Also, special mention, but thanks to [FactorDB](https://factordb.com) for confirming the divisors. Looks like that number isn't prime. I wonder if prime numbers will come up in a future challenge?
