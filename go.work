@@ -1,4 +1,4 @@
-go 1.25.7
+go 1.26.1
 
 use (
 	./day1
@@ -11,6 +11,7 @@ use (
 	./day16
 	./day17
 	./day18
+	./day19
 	./day2
 	./day3
 	./day4
